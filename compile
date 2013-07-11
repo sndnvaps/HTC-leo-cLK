@@ -1,0 +1,34 @@
+#!/bin/bash
+#Updated by dennes544 (from 4pda)
+
+[ `which arm-none-eabi-gcc` ] && TOOLCHAIN_PREFIX="arm-none-eabi-"
+export TOOLCHAIN_PREFIX
+
+ver="CLK1.5.2.0"
+
+if [ "$1" = "clean" ]; then
+	make htcleo clean
+fi
+
+rm bin/nbgen
+rm bin/lk.bin
+rm bin/os.nb.payload
+rm bin/os.nb
+rm bin/RUU_signed.nbh
+rm bin/LEOIMG.nbh
+
+if [ ! -f bin/nbgen ]; then
+	gcc -std=gnu1x nbgen.c -o bin/nbgen
+fi
+
+make htcleo DEBUG=1
+[ $? -eq 0 ] || exit 1
+cp build-htcleo/lk.bin bin/
+
+cd bin
+chmod +x yang
+./nbgen -o:os.nb -r:recovery.img
+./yang -F RUU_signed.nbh -f os.nb -t 0x400 -s 64 -d PB8110000 -c 11111111 -v $ver -l WWE
+./yang -F LEOIMG.nbh -f os.nb -t 0x400 -s 64 -d PB8110000 -c 11111111 -v $ver -l WWE
+cd ..
+
